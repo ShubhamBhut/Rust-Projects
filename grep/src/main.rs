@@ -1,7 +1,7 @@
 use std::env;
-use std::fs;
 use std::process;
-use std::error::Error;
+
+use grep::Config;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -14,35 +14,37 @@ fn main() {
     println!("Searching for {}", config.query);
     println!("The file path is {}", config.file_path);
     
-    if let Err(e) = run(config){
+    if let Err(e) = grep::run(config){
         println!("Application Error: {}", e);
         process::exit(1);
     }
-    }
+}
 
-fn run(config:Config) -> Result<(), Box<dyn Error>>{
+pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str>{
+
+    let mut results = Vec::new();
     
-    let contents = fs::read_to_string(config.file_path)?;
-    println!("with text:{}", contents);
-
-    Ok(())
-}
-
-struct Config {
-    query : String,
-    file_path: String
-}
-
-impl Config {
-
-    fn new(args: &[String]) -> Result<Config, &str>{
-
-        if args.len() < 3 {
-            return Err("Not enough arguments!")
+    for line in contents.lines(){
+        if line.contains(query){
+            results.push(line);
         }
-        let query = args[1].clone();
-        let file_path = args[2].clone();
-    
-        Ok(Config { query: query, file_path: file_path })
+    }
+    results
 }
+
+#[cfg(test)]
+mod tests {
+    use std::vec;
+
+    use super::*;
+
+    fn one_result() {
+
+        let query = "duct";
+        let contents = "/
+Rust:
+safe, fast, productive.
+Pick three";
+        assert_eq!(vec!["safe, fast, productive"], search(query, contents));
+    }
 }
